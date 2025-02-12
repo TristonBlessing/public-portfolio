@@ -1,37 +1,127 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import Header from './components/Header'
+import { ReactEventHandler, useState } from "react";
+import { ReactElement } from "react";
 
-function App() {
-  const [count, setCount] = useState(0)
+type squareState = string | null;
+type boardState = Array<squareState>;
+type squareProps = {value: squareState, onSquareClick: React.MouseEventHandler<HTMLButtonElement> | undefined};
+type boardProps = {xIsNext: boolean, squares: boardState, onPlay: any};
+
+const boardNumberofRows = 3;
+const boardNumberofColumns = 3;
+const boardCells = boardNumberofRows * boardNumberofColumns;
+
+function Square({ value, onSquareClick }: squareProps) {
+  return (
+    <button className="square" onClick={onSquareClick}>
+      {value}
+    </button>
+  );
+}
+
+function Board({ xIsNext, squares, onPlay }: boardProps): ReactElement {
+  function handleClick(squareIndex: number) {
+    if (squares[squareIndex] || calculateWinner(squares)) {
+      return;
+    }
+    const nextSquares: boardState = squares.slice();
+    nextSquares[squareIndex] = "X";
+    if (xIsNext) {
+      nextSquares[squareIndex] = "X";
+    } else {
+      nextSquares[squareIndex] = "O";
+    }
+    onPlay(nextSquares);
+  }
+
+  const winner = calculateWinner(squares);
+  let status;
+  if (winner) {
+    status = "Winner: " + winner;
+  } else {
+    status = "Next player: " + (xIsNext ? "X" : "O");
+  }
+
+  function boardRow(rowIndex: number): ReactElement{
+    return (
+      <div className="board-row">
+        <Square value={squares[rowIndex]}  onSquareClick={() => handleClick(rowIndex)} key={rowIndex} />
+        <Square value={squares[rowIndex+1]}  onSquareClick={() => handleClick(rowIndex+1)} key={rowIndex+1}  />
+        <Square value={squares[rowIndex+2]}  onSquareClick={() => handleClick(rowIndex+2)} key={rowIndex+2}  />
+      </div>
+    );
+  }
+
+  const returnElementArray: Array<ReactElement> = [];
+  for(let i = 0; i < squares.length; i += boardNumberofColumns){
+    returnElementArray.push(boardRow(i));
+  }
 
   return (
     <>
-      <Header/>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <div className="status">{status}</div>
+      {returnElementArray}
     </>
-  )
+  );
 }
 
-export default App
+function calculateWinner(squares: boardState) {
+  const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6]
+  ];
+  for (let i = 0; i < lines.length; i++) {
+    const [a, b, c] = lines[i];
+    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+      return squares[a];
+    }
+  }
+  return null;
+}
+
+export default function Game() {
+  const [history, setHistory] = useState<Array<boardState>>([Array(boardCells).fill(null)]);
+  const [currentMove, setCurrentMove] = useState<number>(0);
+  const xIsNext = currentMove % 2 === 0;
+  const currentSquares = history[currentMove];
+
+  function handlePlay(nextSquares: boardState) {
+    const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
+    setHistory(nextHistory);
+    setCurrentMove(nextHistory.length - 1);
+  }
+
+  function jumpTo(nextMove: number) {
+    setCurrentMove(nextMove);
+  }
+
+  const moves = history.map((_squares, move) => {
+    let description;
+    if (move > 0) {
+      description = 'Go to move #' + move;
+    } else {
+      description = 'Go to game start';
+    }
+    return (
+      <li key={move}>
+        <button onClick={() => jumpTo(move)}>{description}</button>
+      </li>
+    );
+  });
+
+  return (
+    <div className="game">
+      <div className="game-board">
+        <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />
+      </div>
+      <div className="game-info">
+        <ol>{moves}</ol>
+      </div>
+    </div>
+  );
+}
