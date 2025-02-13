@@ -1,10 +1,10 @@
-import { ReactEventHandler, useState } from "react";
+import { useState } from "react";
 import { ReactElement } from "react";
 
 type squareState = string | null;
 type boardState = Array<squareState>;
 type squareProps = {value: squareState, onSquareClick: React.MouseEventHandler<HTMLButtonElement> | undefined};
-type boardProps = {xIsNext: boolean, squares: boardState, onPlay: any};
+type boardProps = {xIsNext: boolean, squares: boardState, onGamePlay: (nextSquares: boardState)=>void};
 
 const boardNumberofRows = 3;
 const boardNumberofColumns = 3;
@@ -18,7 +18,7 @@ function Square({ value, onSquareClick }: squareProps) {
   );
 }
 
-function Board({ xIsNext, squares, onPlay }: boardProps): ReactElement {
+function Board({ xIsNext, squares, onGamePlay }: boardProps): ReactElement {
   function handleClick(squareIndex: number) {
     if (squares[squareIndex] || calculateWinner(squares)) {
       return;
@@ -30,7 +30,7 @@ function Board({ xIsNext, squares, onPlay }: boardProps): ReactElement {
     } else {
       nextSquares[squareIndex] = "O";
     }
-    onPlay(nextSquares);
+    onGamePlay(nextSquares);
   }
 
   const winner = calculateWinner(squares);
@@ -117,7 +117,7 @@ export default function Game() {
   return (
     <div className="game">
       <div className="game-board">
-        <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />
+        <Board xIsNext={xIsNext} squares={currentSquares} onGamePlay={handlePlay} />
       </div>
       <div className="game-info">
         <ol>{moves}</ol>
